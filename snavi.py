@@ -23,6 +23,8 @@ inputpath = ""
 outputpath = ""
 recursive = False
 overwrite = True
+run_in_folder = False
+videofile = ""
 colors = Colors()
 
 
@@ -31,14 +33,15 @@ def print_no_newline(string):
     sys.stdout.flush()
 
 
-def read_input_folders():
+def read_arguments():
     """
     Reads and parses cli arguments
     """
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hnri:0:', ['help', 'no-overwrite', 'recursive', 'input=', 'output='])
+        #TODO - silent output mode
+        opts, args = getopt.getopt(sys.argv[1:], 'hnrf:i:o:', ['help', 'file=', 'no-overwrite', 'recursive', 'input=', 'output='])
         if not opts:
-            usage("Input directory was not specified.")
+            usage()
     except getopt.GetoptError:
         usage()
 
@@ -46,24 +49,35 @@ def read_input_folders():
     global outputpath
     global overwrite
     global recursive
+    global run_in_folder
+    global videofile
+
     for opt, arg in opts:
-        if opt in ('-h', '--help'):
+        if not run_in_folder and opt in ('-f', '--file'):
+            videofile = arg
+        elif not run_in_folder and opt in ('-h', '--help'):
             usage()
+
         else:
             if opt in ('-n', '--no-overwrite'):
                 overwrite = False
+
             if opt in ('-r', '--recursive'):
                 recursive = True
+
             if opt in ("-i", "--input"):
+                run_in_folder = True
                 inputpath = arg
                 if not os.path.exists(inputpath):
                     usage(inputpath + " - the directory does not exist.")
-
                 outputpath = os.path.join(inputpath, "pics")
-                if not os.path.exists(outputpath):
-                    os.mkdir(outputpath)
-            else:
-                usage()
+
+            if opt in ("-o", "--output"):
+                outputpath = arg
+
+            if not os.path.exists(outputpath):
+                os.makedirs(outputpath)
+
     print('Input folder :', inputpath)
     print('Output folder:', outputpath, "\n")
 
@@ -75,14 +89,21 @@ def usage(*message):
     """
     if message:
         print(message)
-    print(colors.BOLD, "  Usage:", colors.ENDC, "snavi.py -i <inputfolder>\n",
-          colors.BOLD, "       -h, --help", colors.ENDC, "\n",
-          "              See help\n",
+    print(colors.BOLD, "  Usage:", colors.ENDC, "snavi.py -f <file>\n"
+          "           snavi.py -i <inputfolder>\n\n",
           "  Options:\n",
+          colors.BOLD, "       -h, --help", colors.ENDC, "\n\n",
+          "              See help\n",
+          colors.BOLD, "       -f, --file=FILE", colors.ENDC, "\n"
+          "              Path to single video file\n\n",
+          colors.BOLD, "       -i, --input=PATH", colors.ENDC, "\n"
+          "              Directory where input videos are stored\n\n",
+          colors.BOLD, "       -o, --output=PATH", colors.ENDC, "\n"
+          "              Directory where output pictures will be saved (creates if it doesn't exist)\n\n",
           colors.BOLD, "       -n, --no-overwrite", colors.ENDC, "\n"
-          "              Do not overwrite output files\n",
+          "              Do not overwrite output pictures\n\n",
           colors.BOLD, "       -r, --recursive", colors.ENDC, "\n"
-          "              Run the script recursively inside inner directories\n")
+          "              Run the script recursively for every video file inside inner directories of given folder\n\n")
     sys.exit(2)
 
 
@@ -169,7 +190,7 @@ def is_correct_video_file(file):
     return True
 
 
-def convert_videos_in_folder():
+def run_for_videos_in_folder():
     """
     Loop goes through all files in specified directory and takes snapshots
     of video files presented in folder and subdirectories.
@@ -181,15 +202,22 @@ def convert_videos_in_folder():
         if os.path.isdir(os.path.join(inputpath, file)):
             # TODO - go recursively inside the folder
             continue
-        print(colors.BOLD, file, "-->", colors.ENDC)
-        if not is_correct_video_file(file):
-            continue
-        random_time = format_time(get_random_time(file))
-        print_no_newline("    Taking snapshot at random time: " + random_time),
-        take_snapshot(file, random_time)
+        take_snapshot_for_file(file)
     return 0
 
 
+def take_snapshot_for_file(file):
+    print(colors.BOLD, file, "-->", colors.ENDC)
+    if not is_correct_video_file(file):
+        return
+    random_time = format_time(get_random_time(file))
+    print_no_newline("    Taking snapshot at random time: " + random_time),
+    take_snapshot(file, random_time)
+
+
 if __name__ == "__main__":
-    read_input_folders()
-    sys.exit(convert_videos_in_folder())
+    read_arguments()
+    if run_in_folder:
+        run_for_videos_in_folder()
+    else:
+        take_snapshot_for_file(videofile)
