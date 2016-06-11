@@ -28,8 +28,9 @@ videofile = ""
 colors = Colors()
 
 
-def print_no_newline(string):
-    sys.stdout.write(string)
+def print_no_newline(*strs):
+    for str in strs:
+        sys.stdout.write(str)
     sys.stdout.flush()
 
 
@@ -38,48 +39,56 @@ def read_arguments():
     Reads and parses cli arguments
     """
     try:
-        #TODO - silent output mode
-        opts, args = getopt.getopt(sys.argv[1:], 'hnrf:i:o:', ['help', 'file=', 'no-overwrite', 'recursive', 'input=', 'output='])
+        # TODO - silent output mode
+        opts, args = getopt.getopt(sys.argv[1:], 'hnrf:i:o:',
+                                   ['help', 'file=', 'no-overwrite', 'recursive', 'input=', 'output='])
         if not opts:
             usage()
     except getopt.GetoptError:
         usage()
 
     global inputpath
-    global outputpath
     global overwrite
     global recursive
     global run_in_folder
     global videofile
 
     for opt, arg in opts:
-        if not run_in_folder and opt in ('-f', '--file'):
-            videofile = arg
-        elif not run_in_folder and opt in ('-h', '--help'):
+        if opt in ('-h', '--help'):
             usage()
 
-        else:
-            if opt in ('-n', '--no-overwrite'):
-                overwrite = False
+        if not run_in_folder and opt in ('-f', '--file'):
+            videofile = arg
+            print('Input file   :', videofile)
 
-            if opt in ('-r', '--recursive'):
-                recursive = True
+        if opt in ('-n', '--no-overwrite'):
+            overwrite = False
 
-            if opt in ("-i", "--input"):
-                run_in_folder = True
-                inputpath = arg
-                if not os.path.exists(inputpath):
-                    usage(inputpath + " - the directory does not exist.")
-                outputpath = os.path.join(inputpath, "pics")
+        if opt in ('-r', '--recursive'):
+            recursive = True
 
-            if opt in ("-o", "--output"):
-                outputpath = arg
+        if opt in ("-i", "--input"):
+            run_in_folder = True
+            inputpath = arg
+            print('Input folder :', inputpath)
 
-            if not os.path.exists(outputpath):
-                os.makedirs(outputpath)
+        if opt in ("-o", "--output"):
+            out = arg
+            if not os.path.exists(out):
+                os.makedirs(out)
+            set_output_path(out)
 
-    print('Input folder :', inputpath)
-    print('Output folder:', outputpath, "\n")
+    if not outputpath:
+        set_output_path()
+
+
+def set_output_path(*out):
+    global outputpath
+    if len(out) > 0:
+        outputpath = out[0]
+    elif not run_in_folder and not outputpath:
+        outputpath = os.path.join(os.path.dirname(videofile), "pics")
+    print('Output folder:', outputpath)
 
 
 def usage(*message):
@@ -113,8 +122,8 @@ def get_random_time(file):
     :param file: file location
     :return: a random duration of a given video file
     """
-    duration_command = "ffprobe -i " + os.path.join(inputpath, file) + \
-                       " -show_entries format=duration -v quiet -of csv=\"p=0\""
+    duration_command = "ffprobe -i \"" + os.path.join(inputpath, file) + \
+                       "\" -show_entries format=duration -v quiet -of csv=\"p=0\""
     process = subprocess.Popen(duration_command,
                                shell=True,
                                stdout=subprocess.PIPE)
@@ -150,8 +159,8 @@ def take_snapshot(file, random_time):
     :param file: video file location
     :param random_time: time, format: hh:mm:ss
     """
-    snapshot_command = "ffmpeg -i " + os.path.join(inputpath, file) + " -ss " + random_time + \
-                       " -vframes 1 " + os.path.join(outputpath, file) + ".png"
+    snapshot_command = "ffmpeg -i \"" + os.path.join(inputpath, file) + "\" -ss " + random_time + \
+                       " -vframes 1 \"" + os.path.join(outputpath, file) + ".png\""
     snapshot_command = snapshot_command + " -y" if overwrite else snapshot_command + " -n"
     process = subprocess.Popen(snapshot_command,
                                shell=True,
@@ -173,6 +182,7 @@ def is_correct_video_file(file):
     :param file: file location
     :return: true if it's video format, false if there are any errors
     """
+    print(colors.BOLD, file, "-->", colors.ENDC)
     mime_type = mimetypes.guess_type(file, False)[0].split("/", 1)[0]
     if mime_type != "video":
         print(colors.WARNING, "[ WARN ] Not video mime type.", colors.ENDC, "\n")
@@ -199,17 +209,17 @@ def run_for_videos_in_folder():
     :return: status; 0 - success
     """
     for file in os.listdir(inputpath):
-        if os.path.isdir(os.path.join(inputpath, file)):
-            # TODO - go recursively inside the folder
-            continue
-        take_snapshot_for_file(file)
+        path_to_file = os.path.join(inputpath, file)
+        isdir = os.path.isdir(path_to_file)
+        if isdir and recursive:
+            run_for_videos_in_folder(path_to_file)
+        if not isdir and is_correct_video_file(file):
+            take_snapshot_for_file(file)
+        continue
     return 0
 
 
 def take_snapshot_for_file(file):
-    print(colors.BOLD, file, "-->", colors.ENDC)
-    if not is_correct_video_file(file):
-        return
     random_time = format_time(get_random_time(file))
     print_no_newline("    Taking snapshot at random time: " + random_time),
     take_snapshot(file, random_time)
