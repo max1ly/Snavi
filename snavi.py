@@ -122,7 +122,7 @@ def get_random_time(file):
     :param file: file location
     :return: a random duration of a given video file
     """
-    duration_command = "ffprobe -i \"" + os.path.join(inputpath, file) + \
+    duration_command = "ffprobe -i \"" + file + \
                        "\" -show_entries format=duration -v quiet -of csv=\"p=0\""
     process = subprocess.Popen(duration_command,
                                shell=True,
@@ -137,7 +137,7 @@ def get_random_time(file):
         return -1
 
     duration = float(duration)
-    print("    Full duration                 :", format_time(duration))
+    print("    Full duration                :", format_time(duration))
 
     return random.randrange(1, int(round(duration)))
 
@@ -153,14 +153,15 @@ def format_time(random_second):
     return time_string
 
 
-def take_snapshot(file, random_time):
+def take_snapshot(file_path, random_time):
     """
     Takes a picture of a given video file at given time
-    :param file: video file location
+    :param file_path: video file location
     :param random_time: time, format: hh:mm:ss
     """
-    snapshot_command = "ffmpeg -i \"" + os.path.join(inputpath, file) + "\" -ss " + random_time + \
-                       " -vframes 1 \"" + os.path.join(outputpath, file) + ".png\""
+    file_name = os.path.basename(file_path)
+    snapshot_command = "ffmpeg -i \"" + file_path + "\" -ss " + random_time + \
+                       " -vframes 1 \"" + os.path.join(outputpath, file_name) + ".png\""
     snapshot_command = snapshot_command + " -y" if overwrite else snapshot_command + " -n"
     process = subprocess.Popen(snapshot_command,
                                shell=True,
@@ -176,19 +177,22 @@ def take_snapshot(file, random_time):
         print(colors.OKGREEN, "[ OK ]", colors.ENDC, "\n")
 
 
-def is_correct_video_file(file):
+def is_correct_video_file(file_path):
     """
     This verifies if the given file in video file
-    :param file: file location
+    :param file_path: file location
     :return: true if it's video format, false if there are any errors
     """
-    print(colors.BOLD, file, "-->", colors.ENDC)
-    mime_type = mimetypes.guess_type(file, False)[0].split("/", 1)[0]
+    print(colors.BOLD, file_path, "-->", colors.ENDC)
+    mime_type = None
+    mime = mimetypes.guess_type(file_path, False)[0]
+    if mime is not None:
+        mime_type = mime.split("/", 1)[0]
     if mime_type != "video":
-        print(colors.WARNING, "[ WARN ] Not video mime type.", colors.ENDC, "\n")
+        print(colors.WARNING, "[ WARN ] Not a video file", colors.ENDC, "\n")
         return False
 
-    check_file_command = "ffprobe -v error " + os.path.join(inputpath, file)
+    check_file_command = "ffprobe -v error " + file_path
     status = subprocess.Popen(check_file_command,
                               shell=True,
                               stdin=subprocess.PIPE,
@@ -200,7 +204,7 @@ def is_correct_video_file(file):
     return True
 
 
-def run_for_videos_in_folder():
+def run_for_videos_in(dir):
     """
     Loop goes through all files in specified directory and takes snapshots
     of video files presented in folder and subdirectories.
@@ -208,26 +212,26 @@ def run_for_videos_in_folder():
     It does one ffmpeg thread at a time on Linux, not sure how it runs on others OSes
     :return: status; 0 - success
     """
-    for file in os.listdir(inputpath):
-        path_to_file = os.path.join(inputpath, file)
-        isdir = os.path.isdir(path_to_file)
-        if isdir and recursive:
-            run_for_videos_in_folder(path_to_file)
-        if not isdir and is_correct_video_file(file):
-            take_snapshot_for_file(file)
+    for file in os.listdir(dir):
+        file_path = os.path.join(dir, file)
+        isdir = os.path.isdir(file_path)
+        if recursive and isdir:
+            run_for_videos_in(file_path)
+        if not isdir and is_correct_video_file(file_path):
+            take_snapshot_for_file(file_path)
         continue
     return 0
 
 
-def take_snapshot_for_file(file):
-    random_time = format_time(get_random_time(file))
-    print_no_newline("    Taking snapshot at random time: " + random_time),
-    take_snapshot(file, random_time)
+def take_snapshot_for_file(file_path):
+    random_time = format_time(get_random_time(file_path))
+    print_no_newline("    Taking snapshot at the second: " + random_time),
+    take_snapshot(file_path, random_time)
 
 
 if __name__ == "__main__":
     read_arguments()
     if run_in_folder:
-        run_for_videos_in_folder()
+        run_for_videos_in(inputpath)
     else:
         take_snapshot_for_file(videofile)
