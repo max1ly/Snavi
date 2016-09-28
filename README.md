@@ -1,5 +1,6 @@
-This script is written for purpose of taking snapshots of a video.
-It creates a snapshot at random second of a video file stored in pointed directory.
+This script is written for purpose of taking random screenshots of a video.
+It run against a single video as well as for directory and subdirectories(if specified)
+recursively for videos to take a screenshot at random second.
 
 ###Prerequisites
 1. It supports [python3](https://www.python.org)

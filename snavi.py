@@ -153,17 +153,17 @@ def format_time(random_second):
     return time_string
 
 
-def take_snapshot(file_path, random_time):
+def take_screenshot(file_path, random_time):
     """
     Takes a picture of a given video file at given time
     :param file_path: video file location
     :param random_time: time, format: hh:mm:ss
     """
     file_name = os.path.basename(file_path)
-    snapshot_command = "ffmpeg -i \"" + file_path + "\" -ss " + random_time + \
+    screenshot_command = "ffmpeg -i \"" + file_path + "\" -ss " + random_time + \
                        " -vframes 1 \"" + os.path.join(outputpath, file_name) + ".png\""
-    snapshot_command = snapshot_command + " -y" if overwrite else snapshot_command + " -n"
-    process = subprocess.Popen(snapshot_command,
+    screenshot_command = screenshot_command + " -y" if overwrite else screenshot_command + " -n"
+    process = subprocess.Popen(screenshot_command,
                                shell=True,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
@@ -206,7 +206,7 @@ def is_correct_video_file(file_path):
 
 def run_for_videos_in(dir):
     """
-    Loop goes through all files in specified directory and takes snapshots
+    Loop goes through all files in specified directory and takes screenshots
     of video files presented in folder and subdirectories.
 
     It does one ffmpeg thread at a time on Linux, not sure how it runs on others OSes
@@ -218,15 +218,15 @@ def run_for_videos_in(dir):
         if recursive and isdir:
             run_for_videos_in(file_path)
         if not isdir and is_correct_video_file(file_path):
-            take_snapshot_for_file(file_path)
+            take_screenshot_for_file(file_path)
         continue
     return 0
 
 
-def take_snapshot_for_file(file_path):
+def take_screenshot_for_file(file_path):
     random_time = format_time(get_random_time(file_path))
-    print_no_newline("    Taking snapshot at the second: " + random_time),
-    take_snapshot(file_path, random_time)
+    print_no_newline("    Taking screenshot at the second: " + random_time),
+    take_screenshot(file_path, random_time)
 
 
 if __name__ == "__main__":
@@ -234,4 +234,4 @@ if __name__ == "__main__":
     if run_in_folder:
         run_for_videos_in(inputpath)
     else:
-        take_snapshot_for_file(videofile)
+        take_screenshot_for_file(videofile)
