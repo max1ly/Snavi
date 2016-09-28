@@ -101,13 +101,13 @@ def usage(*message):
     print(colors.BOLD, "  Usage:", colors.ENDC, "snavi.py -f <file>\n"
           "           snavi.py -i <inputfolder>\n\n",
           "  Options:\n",
-          colors.BOLD, "       -h, --help", colors.ENDC, "\n\n",
-          "              See help\n",
-          colors.BOLD, "       -f, --file=FILE", colors.ENDC, "\n"
+          colors.BOLD, "       -h, --help", colors.ENDC, "\n",
+          "              See help\n\n",
+          colors.BOLD, "       -f, --file=<path to file>", colors.ENDC, "\n"
           "              Path to single video file\n\n",
-          colors.BOLD, "       -i, --input=PATH", colors.ENDC, "\n"
+          colors.BOLD, "       -i, --input=<path to directory>", colors.ENDC, "\n"
           "              Directory where input videos are stored\n\n",
-          colors.BOLD, "       -o, --output=PATH", colors.ENDC, "\n"
+          colors.BOLD, "       -o, --output=<path to directory>", colors.ENDC, "\n"
           "              Directory where output pictures will be saved (creates if it doesn't exist)\n\n",
           colors.BOLD, "       -n, --no-overwrite", colors.ENDC, "\n"
           "              Do not overwrite output pictures\n\n",

@@ -7,8 +7,27 @@ recursively for videos to take a screenshot at random second.
 1. It uses [ffmpeg](https://ffmpeg.org/), so it has to be installed
 
 ###Run:
-    # See usage help
-    $ snavi.py -h
-    # Run
-    $ snavi.py -i path/to/video/folder
+    $ python3 snavi.py -h
+       Usage:  snavi.py -f <file>
+               snavi.py -i <inputfolder>
+
+       Options:
+             -h, --help
+                   See help
+
+             -f, --file=<path to file>
+                  Path to single video file
+
+             -i, --input=<path to directory>
+                  Directory where input videos are stored
+
+             -o, --output=<path to directory>
+                  Directory where output pictures will be saved (creates if it doesn't exist)
+
+             -n, --no-overwrite
+                  Do not overwrite output pictures
+
+             -r, --recursive
+                  Run the script recursively for every video file inside inner directories of given folder
+
 
