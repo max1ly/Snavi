@@ -196,7 +196,7 @@ def is_correct_video_file(file_path):
         print(colors.WARNING, "[ WARN ] Not a video file", colors.ENDC, "\n")
         return False
 
-    check_file_command = "ffprobe -v error " + file_path
+    check_file_command = "ffprobe -v error \"" + file_path + "\""
     status = subprocess.Popen(check_file_command,
                               shell=True,
                               stdin=subprocess.PIPE,
