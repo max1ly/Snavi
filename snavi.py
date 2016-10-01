@@ -53,6 +53,8 @@ def read_arguments():
     global run_in_folder
     global videofile
 
+    print()
+
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage()
@@ -80,6 +82,8 @@ def read_arguments():
 
     if not outputpath:
         set_output_path()
+
+    print()
 
 
 def set_output_path(*out):
@@ -137,7 +141,7 @@ def get_random_time(file):
         return -1
 
     duration = float(duration)
-    print("    Full duration                :", format_time(duration))
+    print("    Full duration       ", format_time(duration))
 
     return random.randrange(1, int(round(duration)))
 
@@ -225,13 +229,17 @@ def run_for_videos_in(dir):
 
 def take_screenshot_for_file(file_path):
     random_time = format_time(get_random_time(file_path))
-    print_no_newline("    Taking screenshot at the second: " + random_time),
+    print_no_newline("    Taking screenshot at " + random_time),
     take_screenshot(file_path, random_time)
 
 
 if __name__ == "__main__":
-    read_arguments()
-    if run_in_folder:
-        run_for_videos_in(inputpath)
-    else:
-        take_screenshot_for_file(videofile)
+    try:
+        read_arguments()
+        if run_in_folder:
+            run_for_videos_in(inputpath)
+        else:
+            take_screenshot_for_file(videofile)
+    except (KeyboardInterrupt, SystemExit):
+        print("\n\n" + Colors.FAIL + "Execution was interrupted. Exiting..." + Colors.ENDC)
+        sys.exit(2)
