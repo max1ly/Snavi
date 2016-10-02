@@ -106,7 +106,7 @@ def usage(*message):
           "           snavi.py -i <inputfolder>\n\n",
           "  Options:\n",
           colors.BOLD, "       -h, --help", colors.ENDC, "\n",
-          "              See help\n\n",
+          "              See the help\n\n",
           colors.BOLD, "       -f, --file=<path to file>", colors.ENDC, "\n"
           "              Path to single video file\n\n",
           colors.BOLD, "       -i, --input=<path to directory>", colors.ENDC, "\n"
