@@ -165,7 +165,7 @@ def take_screenshot(file_path, random_time):
     """
     file_name = os.path.basename(file_path)
     screenshot_command = "ffmpeg -i \"" + file_path + "\" -ss " + random_time + \
-                       " -vframes 1 -filter:v scale=\"iw*2:ih*2\" \"" + os.path.join(outputpath, file_name) + ".png\""
+                       " -vframes 1 -filter:v scale=\"iw*1.4:ih*1.4\" \"" + os.path.join(outputpath, file_name) + ".png\""
     screenshot_command = screenshot_command + " -y" if overwrite else screenshot_command + " -n"
     process = subprocess.Popen(screenshot_command,
                                shell=True,
