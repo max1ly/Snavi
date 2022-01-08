@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import datetime
 import getopt
 import mimetypes
@@ -19,12 +19,12 @@ class Colors:
     UNDERLINE = '\033[4m'
 
 
-inputpath = ""
-outputpath = ""
+input_path = ""
+output_path = ""
 recursive = False
 overwrite = True
 run_in_folder = False
-videofile = ""
+video_file = ""
 colors = Colors()
 
 
@@ -47,11 +47,12 @@ def read_arguments():
     except getopt.GetoptError:
         usage()
 
-    global inputpath
+    global input_path
     global overwrite
     global recursive
     global run_in_folder
-    global videofile
+    global video_file
+    global imagemagick_installed
 
     print()
 
@@ -60,8 +61,8 @@ def read_arguments():
             usage()
 
         if not run_in_folder and opt in ('-f', '--file'):
-            videofile = arg
-            print('Input file   :', videofile)
+            video_file = arg
+            print('Input file   :', video_file)
 
         if opt in ('-n', '--no-overwrite'):
             overwrite = False
@@ -71,28 +72,32 @@ def read_arguments():
 
         if opt in ("-i", "--input"):
             run_in_folder = True
-            inputpath = arg
-            print('Input folder :', inputpath)
+            input_path = arg
+            print('Input folder :', input_path)
 
         if opt in ("-o", "--output"):
             out = arg
-            if not os.path.exists(out):
-                os.makedirs(out)
             set_output_path(out)
 
-    if not outputpath:
+    if not output_path:
         set_output_path()
 
     print()
 
 
 def set_output_path(*out):
-    global outputpath
+    global output_path
     if len(out) > 0:
-        outputpath = out[0]
-    elif not run_in_folder and not outputpath:
-        outputpath = os.path.join(os.path.dirname(videofile), "pics")
-    print('Output folder:', outputpath)
+        output_path = out[0]
+    elif not run_in_folder and not output_path:
+        output_path = os.path.join(os.path.dirname(video_file), "pics")
+    create_output_dir_if_not_exists(output_path)
+    print('Output folder:', output_path)
+
+
+def create_output_dir_if_not_exists(output_dir):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
 
 def usage(*message):
@@ -120,14 +125,14 @@ def usage(*message):
     sys.exit(2)
 
 
-def get_random_time(file):
+def get_duration_and_random_second(file):
     """
     Calculates duration of a video file and takes a random second of the duration
     :param file: file location
-    :return: a random duration of a given video file
+    :return: full video duration and a random second as a tuple
     """
-    duration_command = "ffprobe -i \"" + file + \
-                       "\" -show_entries format=duration -v quiet -of csv=\"p=0\""
+    print("Calculating duration of ", file)
+    duration_command = "ffprobe -i \"" + file + "\" -show_entries format=duration -v quiet -of csv=\"p=0\""
     process = subprocess.Popen(duration_command,
                                shell=True,
                                stdout=subprocess.PIPE)
@@ -136,14 +141,15 @@ def get_random_time(file):
     if return_code != 0:
         print(err.decode())
 
-    duration = out
-    if duration is None:
+    if out is None:
         return -1
 
-    duration = float(duration)
-    print("    Full duration       ", format_time(duration))
-
-    return random.randrange(1, int(round(duration)))
+    duration = float(out)
+    duration_range = int(duration)
+    if duration_range == 0:
+        return duration, 0
+    else:
+        return duration, random.randint(0, duration_range)
 
 
 def format_time(random_second):
@@ -162,10 +168,13 @@ def take_screenshot(file_path, random_time):
     Takes a picture of a given video file at given time
     :param file_path: video file location
     :param random_time: time, format: hh:mm:ss
+    :return: True if picture was taken, False if not
     """
-    file_name = os.path.basename(file_path)
+    """get file name without extension"""
+    file_name = os.path.splitext(os.path.basename(file_path))[0]
+    output_file = os.path.join(output_path, file_name + ".png")
     screenshot_command = "ffmpeg -i \"" + file_path + "\" -ss " + random_time + \
-                       " -vframes 1 \"" + os.path.join(outputpath, file_name) + ".png\""
+                         " -vframes 1 \"" + output_file + "\""
     screenshot_command = screenshot_command + " -y" if overwrite else screenshot_command + " -n"
     process = subprocess.Popen(screenshot_command,
                                shell=True,
@@ -177,8 +186,10 @@ def take_screenshot(file_path, random_time):
     if return_code != 0:
         print(colors.FAIL, "[ FAIL ] return code:", return_code, "\n")
         print("[ ERROR ]", err.decode(), colors.ENDC, "\n")
+        return False, ""
     else:
         print(colors.OKGREEN, "[ OK ]", colors.ENDC, "\n")
+        return True, output_file
 
 
 def is_correct_video_file(file_path):
@@ -208,7 +219,7 @@ def is_correct_video_file(file_path):
     return True
 
 
-def run_for_videos_in(dir):
+def run_for_videos_in(input_dir):
     """
     Loop goes through all files in specified directory and takes screenshots
     of video files presented in folder and subdirectories.
@@ -216,8 +227,8 @@ def run_for_videos_in(dir):
     It does one ffmpeg thread at a time on Linux, not sure how it runs on others OSes
     :return: status; 0 - success
     """
-    for file in os.listdir(dir):
-        file_path = os.path.join(dir, file)
+    for file in os.listdir(input_dir):
+        file_path = os.path.join(input_dir, file)
         isdir = os.path.isdir(file_path)
         if recursive and isdir:
             run_for_videos_in(file_path)
@@ -228,18 +239,64 @@ def run_for_videos_in(dir):
 
 
 def take_screenshot_for_file(file_path):
-    random_time = format_time(get_random_time(file_path))
-    print_no_newline("    Taking screenshot at " + random_time),
-    take_screenshot(file_path, random_time)
+    duration, random_second = get_duration_and_random_second(file_path)
+    timestamp = format_time(random_second)
+    duration_formatted = format_time(duration)
+    print("    Full duration       ", duration_formatted)
+    print_no_newline("    Taking screenshot at " + timestamp),
+    taken, picture_file = take_screenshot(file_path, timestamp)
+    if imagemagick_installed and taken:
+        add_timestamp(picture_file, duration_formatted, timestamp)
+
+
+def add_timestamp(picture_file, duration_formatted, timestamp):
+    """
+    add text to the picture
+    """
+    text = "Duration: " + duration_formatted + ", taken at: " + timestamp
+    text_command = "convert " + picture_file + \
+                   " -gravity SouthEast -pointsize 22" + \
+                   " -fill \"#FF0000\"" + \
+                   " -draw \"text 5,5 '" + text + "'\" " + \
+                   picture_file
+    process = subprocess.Popen(text_command,
+                               shell=True,
+                               stdin=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               stdout=subprocess.PIPE)
+    out, err = process.communicate()
+    return_code = process.returncode
+    if return_code != 0:
+        print(colors.FAIL, "[ FAIL ] adding text to picture. Return code:", return_code, "\n")
+        print("[ ERROR ]", err.decode(), colors.ENDC, "\n")
+
+
+def check_imagemagick_installed():
+    """
+    Checks if ImageMagick is installed
+    :return: True if installed, False if not
+    """
+    process = subprocess.Popen("which convert",
+                               shell=True,
+                               stdin=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               stdout=subprocess.PIPE)
+    out, err = process.communicate()
+    return_code = process.returncode
+    if return_code != 0:
+        return False
+    else:
+        return True
 
 
 if __name__ == "__main__":
     try:
+        imagemagick_installed = check_imagemagick_installed()
         read_arguments()
         if run_in_folder:
-            run_for_videos_in(inputpath)
+            run_for_videos_in(input_path)
         else:
-            take_screenshot_for_file(videofile)
+            take_screenshot_for_file(video_file)
     except (KeyboardInterrupt, SystemExit):
         print("\n\n" + Colors.FAIL + "Execution was interrupted. Exiting..." + Colors.ENDC)
         sys.exit(2)

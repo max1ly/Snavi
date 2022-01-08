@@ -8,8 +8,9 @@ say you need some disk space to free and there is no time to watch all of them..
 
 ###Install:
 1. [python3](https://www.python.org)
-1. [ffmpeg](https://ffmpeg.org/)
-1. checkout the repo, or download zip file and unpack it
+2. [ffmpeg](https://ffmpeg.org/)
+3. [imagemagick](https://www.imagemagick.org/) (optional) 
+4. checkout the repo, or download zip file and unpack it
 
 ###To run:
     $ python3 snavi.py -h
