@@ -1,10 +1,6 @@
-This script is for taking random screenshot of a video.
+This script captures random frames from video files as still images.
 
-For instance, if you've got bunch of videos unsorted, unknown and poorly named -
-you can screenshot all of them and then go through pictures to see what are they about.
-
-The common use case, I guess, is heaps of home shots stored on computer,
-say you need some disk space to free and there is no time to watch all of them...
+This is useful when dealing with a large number of unsorted, unknown, or poorly named videos. By quickly browsing through the resulting images, you can identify the contents of the videos without having to watch them individually. This is especially helpful when managing large collections of home videos that have accumulated on your computer and need to be sorted or cleared to free up disk space.
 
 ###Install:
 1. [python3](https://www.python.org)
